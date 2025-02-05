@@ -17,6 +17,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Pgwire.Abstractions\Pgwire.Abstractions.csproj" />
     <ProjectReference Include="..\Pgwire.Bridge\Pgwire.Bridge.csproj" />
+    <ProjectReference Include="..\Pgwire.Echo\Pgwire.Echo.csproj" />
     <ProjectReference Include="..\Pgwire.Filesystem\Pgwire.Filesystem.csproj" />
     <ProjectReference Include="..\Pgwire.SqlServer\Pgwire.SqlServer.csproj" />
   </ItemGroup>
