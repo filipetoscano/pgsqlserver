@@ -1,10 +1,9 @@
 ﻿using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Pgwire.Bridge.Messages;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
-
 namespace Pgwire.Bridge;
 
 /// <summary />
@@ -44,20 +43,7 @@ public class PgwireBridgeService : BackgroundService, IHostedService
                 var client = await _server.AcceptTcpClientAsync( stoppingToken );
                 _logger.LogInformation( "Client {ClientId}: Connected", client.Client.Handle );
 
-                /*
-                 * 
-                 */
-                var stream = client.GetStream();
-
-                var msg = Encoding.UTF8.GetBytes( "echo ECHO" );
-                await stream.WriteAsync( msg, stoppingToken );
-
-
-                /*
-                 * 
-                 */
-                _logger.LogInformation( "Client {ClientId}: Close", client.Client.Handle );
-                client.Close();
+                _ = Task.Run( () => HandleClient( client, stoppingToken ) );
             }
         }
         catch ( TaskCanceledException )
@@ -67,6 +53,88 @@ public class PgwireBridgeService : BackgroundService, IHostedService
         finally
         {
             _server.Stop();
+        }
+    }
+
+
+    /// <summary />
+    private async Task HandleClient( TcpClient client, CancellationToken stoppingToken )
+    {
+        /*
+         * 
+         */
+        using ( _logger.BeginScope( new Dictionary<string, object>()
+        {
+            { "ClientId", client.Client.Handle }
+        } ) )
+        {
+            var buffer = new byte[ 8192 ];
+            var stream = client.GetStream();
+
+
+            while ( stoppingToken.IsCancellationRequested == false )
+            {
+                var n = await stream.ReadAsync( buffer, stoppingToken );
+
+                if ( n == 0 )
+                    continue;
+
+
+                /*
+                 * 
+                 */
+                if ( SSLRequest.Is( buffer ) == true )
+                {
+                    _logger.LogDebug( "SSL Negotation: Decline with N/no" );
+
+                    stream.Write( new byte[] { (byte) 'N' } );
+                    continue;
+                }
+
+
+                /*
+                 * 
+                 */
+                if ( Terminate.Is( buffer ) == true )
+                {
+                    _logger.LogDebug( "Quit" );
+                    break;
+                }
+
+
+                /*
+                 * 
+                 */
+                if ( StartupMessage.Is( buffer ) == true )
+                {
+                    var kv = StartupMessage.Parse( buffer );
+
+                    foreach ( var kvp in kv )
+                        _logger.LogDebug( "Startup: {Key}={Value}", kvp.Key, kvp.Value );
+
+                    AuthenticationOk.Write( stream );
+                    BackEndKey.Write( stream, (int) client.Client.Handle, 4242 );
+                    ParameterStatus.Write( stream, "server_version", "9.5" );
+                    ReadyForQuery.Write( stream );
+
+                    continue;
+                }
+
+
+                /*
+                 * 
+                 */
+                if ( Query.Is( buffer ) == true )
+                {
+                    var sql = Query.Parse( buffer );
+                    _logger.LogDebug( "Query: {Query}", sql );
+
+                    continue;
+                }
+            }
+
+            _logger.LogInformation( "Closing" );
+            client.Close();
         }
     }
 }

@@ -20,6 +20,8 @@ public class Program
         {
             x.MinimumLevel.Debug();
             x.WriteTo.Console();
+
+            x.Enrich.FromLogContext();
         } );
         builder.Services.AddHostedService<PgwireBridgeService>();
 

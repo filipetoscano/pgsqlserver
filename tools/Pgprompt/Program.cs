@@ -40,8 +40,11 @@ public class Program
         {
             while ( true )
             {
-                var sql = Prompt.Input<string>( "> " );
+                var sql = Prompt.Input<string>( "> " ).Trim();
                 Console.WriteLine( sql );
+
+                if ( sql == ".q" )
+                    return 0;
 
                 var cmd = conn.CreateCommand();
                 cmd.CommandText = sql;

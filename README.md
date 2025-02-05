@@ -45,4 +45,5 @@ References
 --------------------------------------------------------------------------
 
 * https://www.postgresql.org/docs/current/protocol.html
+* https://www.postgresql.org/docs/current/protocol-message-formats.html
 * https://gavinray97.github.io/blog/postgres-wire-protocol-jdk-21
