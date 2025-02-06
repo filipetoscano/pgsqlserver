@@ -68,13 +68,13 @@ public class PgwireBridgeService : BackgroundService, IHostedService
             { "ClientId", client.Client.Handle }
         } ) )
         {
-            var buffer = new byte[ 8192 ];
+            var br = new BufferReader();
             var stream = client.GetStream();
 
 
             while ( stoppingToken.IsCancellationRequested == false )
             {
-                var n = await stream.ReadAsync( buffer, stoppingToken );
+                var n = await stream.ReadAsync( br.Buffer, stoppingToken );
 
                 if ( n == 0 )
                     continue;
@@ -83,7 +83,7 @@ public class PgwireBridgeService : BackgroundService, IHostedService
                 /*
                  * 
                  */
-                if ( SSLRequest.Is( buffer ) == true )
+                if ( SSLRequest.Is( br.Buffer ) == true )
                 {
                     _logger.LogDebug( "SSL Negotation: Decline with N/no" );
 
@@ -95,7 +95,7 @@ public class PgwireBridgeService : BackgroundService, IHostedService
                 /*
                  * 
                  */
-                if ( Terminate.Is( buffer ) == true )
+                if ( Terminate.Is( br.Buffer ) == true )
                 {
                     _logger.LogDebug( "Quit" );
                     break;
@@ -105,9 +105,9 @@ public class PgwireBridgeService : BackgroundService, IHostedService
                 /*
                  * 
                  */
-                if ( StartupMessage.Is( buffer ) == true )
+                if ( StartupMessage.Is( br.Buffer ) == true )
                 {
-                    var kv = StartupMessage.Parse( buffer );
+                    var kv = StartupMessage.Parse( br.Buffer );
 
                     foreach ( var kvp in kv )
                         _logger.LogDebug( "Startup: {Key}={Value}", kvp.Key, kvp.Value );
@@ -124,9 +124,9 @@ public class PgwireBridgeService : BackgroundService, IHostedService
                 /*
                  * 
                  */
-                if ( Query.Is( buffer ) == true )
+                if ( Query.Is( br.Buffer ) == true )
                 {
-                    var sql = Query.Parse( buffer );
+                    var sql = Query.Parse( br );
                     _logger.LogDebug( "Query: {Query}", sql );
 
                     continue;

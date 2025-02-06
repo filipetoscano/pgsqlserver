@@ -27,7 +27,7 @@ public class Program
 
         builder.Services.Configure<PgwireBridgeOptions>( o =>
         {
-
+            o.Port = 9432;
         } );
 
 

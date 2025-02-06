@@ -7,7 +7,7 @@ namespace Pgprompt;
 public class Program
 {
     /// <summary />
-    public static int Main( string[] args )
+    public async static Task<int> Main( string[] args )
     {
         Prompt.ThrowExceptionOnCancel = true;
 
@@ -15,7 +15,7 @@ public class Program
         /*
          * 
          */
-        var conn = new Npgsql.NpgsqlConnection();
+        await using var conn = new Npgsql.NpgsqlConnection();
         conn.ConnectionString = "Host=localhost;Port=5432;Username=test;Password=test;";
 
 
@@ -24,7 +24,7 @@ public class Program
          */
         try
         {
-            conn.Open();
+            await conn.OpenAsync();
         }
         catch ( Exception ex )
         {
@@ -46,11 +46,11 @@ public class Program
                 if ( sql == ".q" )
                     return 0;
 
-                var cmd = conn.CreateCommand();
+                await using var cmd = conn.CreateCommand();
                 cmd.CommandText = sql;
                 cmd.CommandType = CommandType.Text;
 
-                using ( var r = cmd.ExecuteReader() )
+                await using ( var r = cmd.ExecuteReader() )
                 {
                     do
                     {
@@ -74,7 +74,7 @@ public class Program
         }
         finally
         {
-            conn.Close();
+            await conn.CloseAsync();
         }
 
         return 0;
